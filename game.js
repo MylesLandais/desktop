@@ -490,7 +490,7 @@
   window.addEventListener("resize", resize);
   resize();
   loadBest();
-  showOverlay("ROOT RUNNER", "> escalate · evade · exfiltrate", "");
+  showOverlay("INTELLIGENT AI", "> hacking sim · by myles · escalate · evade · exfiltrate", "");
   // ?autostart — begin a run immediately (used by tests)
   if (new URLSearchParams(location.search).has("autostart")) startRun();
   frame(performance.now());
