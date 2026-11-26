@@ -1,4 +1,4 @@
-/* Zen Dino — a quiet endless runner. */
+/* Root Runner — you are the packet. The network is hostile. */
 (() => {
   "use strict";
 
@@ -12,21 +12,22 @@
   const startBtn = document.getElementById("start");
 
   const QUOTES = [
-    "Fall down seven times, get up eight.",
-    "The obstacle is the path.",
-    "Sit quietly, and the mud settles by itself.",
-    "No snowflake ever falls in the wrong place.",
-    "When you get to the top of the mountain, keep climbing.",
-    "The journey is the reward."
+    "Trace complete. 0 results. Sometimes silence is the exploit.",
+    "The quiet ones own the box.",
+    "You did not fail the breach. The breach failed you.",
+    "Root is a state of mind.",
+    "Every firewall is a promise someone made to the wrong person.",
+    "Disconnect. Reconnect. Different port, same you."
   ];
 
   const COLORS = {
-    ink: "#2b2b33",
-    inkSoft: "rgba(43,43,51,0.55)",
-    paper: "#f7f3ea",
-    sun: "#e8b04b",
-    accent: "#d97757",
-    moss: "#8a9a7b"
+    phos: "#33ff88",
+    phosSoft: "rgba(51,255,136,0.35)",
+    phosDim: "rgba(51,255,136,0.12)",
+    void0: "#060b07",
+    alert: "#ff3b6b",
+    cyan: "#41d6ff",
+    amber: "#ffc857"
   };
 
   let W = 0, H = 0, dpr = 1;
@@ -63,17 +64,17 @@
   /* ---------- persistence ---------- */
 
   function loadBest() {
-    try { state.best = parseInt(localStorage.getItem("zendino.best") || "0", 10) || 0; } catch (e) {}
+    try { state.best = parseInt(localStorage.getItem("rootrunner.best") || "0", 10) || 0; } catch (e) {}
     if (typeof browser !== "undefined" && browser.storage && browser.storage.local) {
       browser.storage.local.get("best").then(v => {
-        if (v && v.best > state.best) { state.best = v.best; bestEl.textContent = "best " + state.best; }
+        if (v && v.best > state.best) { state.best = v.best; bestEl.textContent = "high " + state.best; }
       }).catch(() => {});
     }
-    bestEl.textContent = "best " + state.best;
+    bestEl.textContent = "high " + state.best;
   }
 
   function saveBest() {
-    try { localStorage.setItem("zendino.best", String(state.best)); } catch (e) {}
+    try { localStorage.setItem("rootrunner.best", String(state.best)); } catch (e) {}
     if (typeof browser !== "undefined" && browser.storage && browser.storage.local) {
       browser.storage.local.set({ best: state.best }).catch(() => {});
     }
@@ -124,9 +125,9 @@
   function spawnObstacle() {
     const roll = Math.random();
     let type;
-    if (roll < 0.22 && state.distance > 900) type = "gate"; // decorative torii, no hitbox
-    else if (roll < 0.6) type = "rock";
-    else type = "bamboo";
+    if (roll < 0.22 && state.distance > 900) type = "gate"; // data arch, pass-through
+    else if (roll < 0.6) type = "rock";                     // firewall block
+    else type = "bamboo";                                   // ICE spike
     state.obstacles.push({ type, x: W + 80, w: 0, h: 0, hit: false });
   }
 
@@ -140,7 +141,7 @@
       o.w = 16; o.h = 74;
       return { x: o.x, y: g - o.h, w: o.w, h: o.h };
     }
-    // torii gate: pass through freely
+    // data arch: pass through freely
     o.w = 70; o.h = 0;
     return null;
   }
@@ -163,7 +164,7 @@
     player.onGround = false;
   }
 
-  // ?bot=1 — simple autoplayer for headless tests: hops rocks and bamboo.
+  // ?bot=1 — simple autoplayer for headless tests: hops firewalls and ICE.
   const BOT = new URLSearchParams(location.search).has("bot");
   function botThink() {
     if (!BOT || state.mode !== "running") return;
@@ -216,11 +217,15 @@
 
   function gameOver() {
     state.mode = "over";
-    if (state.score > state.best) { state.best = state.score; saveBest(); bestEl.textContent = "best " + state.best; }
-    const cause = { rock: "hit a rock", bamboo: "hit the bamboo", gate: "hit the torii gate" }[state.deathBy] || "";
+    if (state.score > state.best) { state.best = state.score; saveBest(); bestEl.textContent = "high " + state.best; }
+    const cause = {
+      rock: "slammed a firewall",
+      bamboo: "flatlined by ICE",
+      gate: "collided with a data arch"
+    }[state.deathBy] || "";
     showOverlay(
-      "Out of balance",
-      "score " + state.score + "  ·  best " + state.best + (cause ? "  ·  " + cause : ""),
+      "CONNECTION TERMINATED",
+      "bytes " + state.score + "  ·  high " + state.best + (cause ? "  ·  " + cause : ""),
       QUOTES[Math.floor(Math.random() * QUOTES.length)]
     );
   }
@@ -276,7 +281,7 @@
       }
     }
 
-    // clouds drift
+    // background drift
     for (const c of state.clouds) {
       c.x -= (c.v + state.speed * 0.02) * dt;
       if (c.x < -160) { c.x = W + 120; c.y = H * (0.08 + Math.random() * 0.25); }
@@ -288,53 +293,68 @@
   function draw() {
     const g = groundY();
 
-    // sky
+    // void sky
     const sky = ctx.createLinearGradient(0, 0, 0, g);
-    sky.addColorStop(0, "#fdf9ef");
-    sky.addColorStop(1, "#f2e8d8");
+    sky.addColorStop(0, "#04090b");
+    sky.addColorStop(1, "#0a140c");
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, g);
 
-    // sun
-    ctx.fillStyle = COLORS.sun;
-    ctx.globalAlpha = 0.85;
+    // monitoring beacon (the distant sysadmin eye)
+    ctx.fillStyle = COLORS.amber;
+    ctx.globalAlpha = 0.5 + 0.2 * Math.sin(state.t * 2);
     ctx.beginPath();
-    ctx.arc(W * 0.78, H * 0.22, 44, 0, Math.PI * 2);
+    ctx.arc(W * 0.78, H * 0.2, 5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = COLORS.amber;
+    ctx.globalAlpha = 0.25;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(W * 0.78, H * 0.2, 14 + 4 * Math.sin(state.t * 2), 0, Math.PI * 2);
+    ctx.stroke();
     ctx.globalAlpha = 1;
 
-    // clouds (soft ellipses)
-    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    // drifting packets in the upper network
+    ctx.fillStyle = "rgba(65,214,255,0.28)";
     for (const c of state.clouds) {
-      ctx.beginPath();
-      ctx.ellipse(c.x, c.y, 46 * c.s, 13 * c.s, 0, 0, Math.PI * 2);
-      ctx.ellipse(c.x + 30 * c.s, c.y - 8 * c.s, 30 * c.s, 11 * c.s, 0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.rotate(state.t * 0.4 * (c.s % 1 > 0.5 ? 1 : -1));
+      ctx.fillRect(-7 * c.s, -7 * c.s, 14 * c.s, 14 * c.s);
+      ctx.restore();
     }
 
-    // mountains
-    ctx.fillStyle = "rgba(138,154,123,0.28)";
+    // server racks on the horizon
+    ctx.fillStyle = "rgba(51,255,136,0.10)";
     drawHills(state.hills[0], state.distance * 0.18);
-    ctx.fillStyle = "rgba(138,154,123,0.5)";
+    ctx.fillStyle = "rgba(51,255,136,0.20)";
     drawHills(state.hills[1], state.distance * 0.42);
 
-    // ground
-    ctx.fillStyle = COLORS.paper;
+    // ground: the network bus
+    ctx.fillStyle = COLORS.void0;
     ctx.fillRect(0, g, W, H - g);
-    ctx.strokeStyle = COLORS.inkSoft;
+    ctx.strokeStyle = COLORS.phosSoft;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, g);
     ctx.lineTo(W, g);
     ctx.stroke();
+    // bus data ticks
+    ctx.strokeStyle = COLORS.phosDim;
+    ctx.lineWidth = 1;
+    const tickOffset = (state.distance * 0.9) % 28;
+    for (let x = -tickOffset; x < W; x += 28) {
+      ctx.beginPath();
+      ctx.moveTo(x, g + 8);
+      ctx.lineTo(x + 10, g + 8);
+      ctx.stroke();
+    }
 
     // obstacles
     for (const o of state.obstacles) drawObstacle(o);
 
-    // player: enso orb
+    // player: the packet
     drawPlayer();
-
-    // hud text is DOM, nothing here
   }
 
   function drawHills(layer, offset) {
@@ -356,7 +376,10 @@
   function drawObstacle(o) {
     const g = groundY();
     if (o.type === "rock") {
-      ctx.fillStyle = COLORS.ink;
+      // firewall: layered dark blocks with green seams
+      ctx.fillStyle = "#0d1f14";
+      ctx.strokeStyle = COLORS.phosSoft;
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(o.x, g);
       ctx.lineTo(o.x + o.w * 0.22, g - o.h * 0.9);
@@ -365,27 +388,46 @@
       ctx.lineTo(o.x + o.w, g);
       ctx.closePath();
       ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = COLORS.phosDim;
+      ctx.fillRect(o.x + 4, g - o.h * 0.45, o.w - 10, 2);
     } else if (o.type === "bamboo") {
-      ctx.fillStyle = COLORS.moss;
+      // ICE spike: hot red column with flicker
+      const flick = 0.75 + 0.25 * Math.sin(state.t * 9 + o.x);
+      ctx.fillStyle = COLORS.alert;
+      ctx.globalAlpha = flick;
       ctx.fillRect(o.x, g - o.h, o.w, o.h);
-      ctx.strokeStyle = "rgba(43,43,51,0.35)";
-      ctx.lineWidth = 1;
-      for (let i = 1; i <= 3; i++) {
-        const y = g - o.h + (o.h * i) / 4;
-        ctx.beginPath(); ctx.moveTo(o.x, y); ctx.lineTo(o.x + o.w, y); ctx.stroke();
-      }
-      ctx.fillStyle = COLORS.moss;
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#fff";
+      ctx.globalAlpha = 0.5 * flick;
+      ctx.fillRect(o.x + 2, g - o.h + 4, o.w - 4, 2);
+      ctx.globalAlpha = 1;
+      // base node
+      ctx.fillStyle = COLORS.alert;
+      ctx.globalAlpha = 0.4;
       ctx.beginPath();
-      ctx.ellipse(o.x + o.w + 9, g - o.h + 6, 10, 3.5, -0.5, 0, Math.PI * 2);
+      ctx.arc(o.x + o.w / 2, g, 12, 0, Math.PI * 2);
       ctx.fill();
-    } else { // torii gate to pass UNDER
+      ctx.globalAlpha = 1;
+    } else {
+      // data arch: cyan gate you pass through
       const top = g - 168;
-      ctx.fillStyle = COLORS.accent;
-      ctx.fillRect(o.x, top, o.w, 7);           // kasagi
-      ctx.fillRect(o.x + 6, top + 7, o.w - 12, 6); // nuki
-      ctx.fillRect(o.x + o.w / 2 - 3, top + 13, 6, o.h + 10); // center post
-      ctx.fillRect(o.x - 2, g - 26, 5, 26);     // left leg
-      ctx.fillRect(o.x + o.w - 3, g - 26, 5, 26); // right leg
+      ctx.fillStyle = COLORS.cyan;
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(o.x, top, o.w, 5);            // top bar
+      ctx.fillRect(o.x - 4, top, 5, 168);        // left pillar
+      ctx.fillRect(o.x + o.w - 1, top, 5, 168);  // right pillar
+      ctx.globalAlpha = 0.25;
+      ctx.fillRect(o.x - 12, top - 6, o.w + 24, 3); // glow cap
+      ctx.globalAlpha = 1;
+      // falling glyph rain through the arch
+      ctx.fillStyle = COLORS.cyan;
+      ctx.globalAlpha = 0.5;
+      for (let i = 0; i < 3; i++) {
+        const gy = top + 14 + ((state.t * 120 + i * 47 + o.x) % 150);
+        ctx.fillRect(o.x + 12 + i * 22, gy, 2, 8);
+      }
+      ctx.globalAlpha = 1;
     }
   }
 
@@ -393,22 +435,34 @@
     const sq = player.squash;
     const rx = player.r * (1 + sq * 0.28);
     const ry = player.r * (1 - sq * 0.24);
+
+    // motion trail
+    ctx.fillStyle = COLORS.phosDim;
+    for (let i = 1; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.arc(player.x - i * 14, player.y + (player.onGround ? 0 : i * 2), player.r * (0.75 - i * 0.16), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(player.onGround ? 0 : player.spin);
 
-    // brush gap enso
-    ctx.strokeStyle = COLORS.ink;
-    ctx.lineWidth = 5.5;
+    // packet shell
+    ctx.strokeStyle = COLORS.phos;
+    ctx.lineWidth = 4.5;
+    ctx.shadowColor = COLORS.phos;
+    ctx.shadowBlur = 12;
     ctx.beginPath();
-    ctx.ellipse(0, 0, rx, ry, 0, -0.4, Math.PI * 2 - 0.15);
+    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
     ctx.stroke();
 
-    // accent dot
-    ctx.fillStyle = COLORS.accent;
+    // kernel core
+    ctx.fillStyle = COLORS.cyan;
     ctx.beginPath();
-    ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+    ctx.arc(0, 0, 5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
     ctx.restore();
   }
 
@@ -436,7 +490,7 @@
   window.addEventListener("resize", resize);
   resize();
   loadBest();
-  showOverlay("Zen Dino", "breathe in · breathe out · jump", "");
+  showOverlay("ROOT RUNNER", "> escalate · evade · exfiltrate", "");
   // ?autostart — begin a run immediately (used by tests)
   if (new URLSearchParams(location.search).has("autostart")) startRun();
   frame(performance.now());
