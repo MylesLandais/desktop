@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+  "name": "Zen Dino",
+  "version": "1.0.0",
+  "description": "A zen-themed endless runner on your new tab. Built for Zen Browser.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "zen-dino@myleslandais",
+      "strict_min_version": "102.0"
+    }
+  },
+  "icons": {
+    "96": "icon.svg"
+  },
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "permissions": ["storage"]
+}
